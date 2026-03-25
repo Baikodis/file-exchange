@@ -43,26 +43,41 @@ async function rotate() {
 /** Write stream that checks rotation before each write. */
 function createLogStream() {
   let stream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
+  let rotating = false;
 
   const writable = {
     write(line) {
-      // Check rotation asynchronously; worst case one extra line before rotate
-      rotate().then(() => {
-        // Reopen stream if file was rotated (current fd points to .1)
+      // Check rotation asynchronously; guard against concurrent rotations
+      if (!rotating) {
+        let needsRotation = false;
         try {
-          const stat = fs.fstatSync(stream.fd);
-          const fileStat = fs.statSync(LOG_FILE).ino;
-          if (stat.ino !== fileStat) {
-            stream.end();
-            stream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
-          }
+          const stat = fs.statSync(LOG_FILE);
+          needsRotation = stat.size >= MAX_SIZE;
         } catch {
-          // File may not exist yet after rotation; reopen
-          stream.end();
-          stream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
+          // File doesn't exist yet, no rotation needed
         }
-        stream.write(line);
-      });
+
+        if (needsRotation) {
+          rotating = true;
+          rotate()
+            .then(() => {
+              // Reopen stream after rotation
+              stream.end();
+              stream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
+              stream.write(line);
+            })
+            .catch(() => {
+              // Rotation failed; keep writing to current stream
+              stream.write(line);
+            })
+            .finally(() => {
+              rotating = false;
+            });
+          return true;
+        }
+      }
+
+      stream.write(line);
       return true;
     },
   };

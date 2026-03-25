@@ -1,15 +1,34 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
- * Compute SHA-256 hash of a file.
+ * Validate that id is a proper UUID. Prevents path traversal.
+ * @param {string} id
+ * @throws {Error} if id is not a valid UUID
+ */
+function validateUUID(id) {
+  if (!UUID_RE.test(id)) {
+    throw new Error(`Invalid file ID: ${id}`);
+  }
+}
+
+/**
+ * Compute SHA-256 hash of a file using streaming (safe for large files).
  * @param {string} filePath — absolute path to the file
  * @returns {Promise<string>} hex-encoded SHA-256 hash
  */
-async function computeSha256(filePath) {
-  const data = await fsp.readFile(filePath);
-  return crypto.createHash('sha256').update(data).digest('hex');
+function computeSha256(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+    stream.on('error', reject);
+  });
 }
 
 /**
@@ -49,6 +68,7 @@ function createMetadata({ id, originalName, storedName, mimeType, size, sha256, 
  * @param {object} metadata — metadata object
  */
 async function saveMetadata(uploadDir, id, metadata) {
+  validateUUID(id);
   const metaPath = path.join(uploadDir, `${id}.meta.json`);
   await fsp.writeFile(metaPath, JSON.stringify(metadata, null, 2), 'utf8');
 }
@@ -60,6 +80,7 @@ async function saveMetadata(uploadDir, id, metadata) {
  * @returns {Promise<object>} parsed metadata
  */
 async function readMetadata(uploadDir, id) {
+  validateUUID(id);
   const metaPath = path.join(uploadDir, `${id}.meta.json`);
   const raw = await fsp.readFile(metaPath, 'utf8');
   return JSON.parse(raw);
@@ -72,7 +93,9 @@ async function readMetadata(uploadDir, id) {
  * @param {string} ext — file extension (e.g. ".pdf")
  */
 async function deleteFileAndMeta(uploadDir, id, ext) {
-  const filePath = path.join(uploadDir, `${id}${ext}`);
+  validateUUID(id);
+  const normalizedExt = ext.startsWith('.') ? ext : '.' + ext;
+  const filePath = path.join(uploadDir, `${id}${normalizedExt}`);
   const metaPath = path.join(uploadDir, `${id}.meta.json`);
 
   await Promise.all([
