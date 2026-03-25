@@ -1,9 +1,10 @@
 import rateLimit from 'express-rate-limit';
+import config from '../config.js';
 
-/** 10 uploads per minute per IP. */
+/** Uploads per minute per IP (from config). */
 const uploadLimiter = rateLimit({
   windowMs: 60_000,
-  max: 10,
+  max: config.rateLimitUploads,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many uploads. Try again later.' },

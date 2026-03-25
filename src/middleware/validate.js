@@ -1,4 +1,4 @@
-import { readFile, unlink } from 'node:fs/promises';
+import { open, unlink } from 'node:fs/promises';
 import { detectMimeType } from '../utils/magic.js';
 import config from '../config.js';
 
@@ -75,8 +75,11 @@ async function validateFile(req, res, next) {
   const { path: tempPath, originalname } = req.file;
 
   try {
-    // Step 1: Read first 12 bytes and detect magic bytes
-    const header = await readFile(tempPath).then((buf) => buf.subarray(0, 12));
+    // Step 1: Read only first 12 bytes and detect magic bytes
+    const fh = await open(tempPath, 'r');
+    const header = Buffer.alloc(12);
+    await fh.read(header, 0, 12, 0);
+    await fh.close();
     let detectedMime = detectMimeType(header);
 
     // Step 2: Extract last extension
