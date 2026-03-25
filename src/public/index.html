@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Exchange</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-hover: #1c2129;
+  --border: #30363d;
+  --border-active: #58a6ff;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-hover: #79c0ff;
+  --success: #3fb950;
+  --error: #f85149;
+  --danger: #da3633;
+  --danger-hover: #f85149;
+  --radius: 8px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+header {
+  padding: 24px 0 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+header p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+/* ── Upload Zone ── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  border-color: var(--border-active);
+  background: rgba(88, 166, 255, 0.04);
+}
+
+.upload-zone.dragover {
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.upload-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.upload-zone p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+
+.upload-zone input[type="file"] {
+  display: none;
+}
+
+.btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-active);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+  padding: 4px 12px;
+  font-size: 0.8rem;
+}
+
+.btn-danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-download {
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.btn-download:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Progress Bar ── */
+.progress-container {
+  margin-bottom: 20px;
+  display: none;
+}
+
+.progress-container.active {
+  display: block;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.15s ease;
+}
+
+/* ── Messages ── */
+.message {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.message.visible {
+  display: block;
+}
+
+.message.success {
+  background: rgba(63, 185, 80, 0.1);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  color: var(--success);
+}
+
+.message.error {
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  color: var(--error);
+}
+
+/* ── File List ── */
+.file-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.file-list-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.file-count {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+
+.empty-state .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+}
+
+/* ── Table ── */
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.file-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.file-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.file-table tr:hover td {
+  background: var(--surface);
+}
+
+.file-name {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-actions {
+  white-space: nowrap;
+}
+
+.file-actions a,
+.file-actions button {
+  margin-right: 6px;
+}
+
+.file-actions a:last-child,
+.file-actions button:last-child {
+  margin-right: 0;
+}
+
+/* ── Drag Overlay ── */
+.drag-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(88, 166, 255, 0.06);
+  border: 3px dashed var(--accent);
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.drag-overlay.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drag-overlay span {
+  font-size: 1.2rem;
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--bg);
+  padding: 12px 28px;
+  border-radius: var(--radius);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  main { padding: 16px 12px 32px; }
+  .upload-zone { padding: 32px 16px; }
+  .file-table th, .file-table td { padding: 8px 6px; font-size: 0.8rem; }
+  .file-name { max-width: 140px; }
+  .col-type, .col-date { display: none; }
+  .btn-download, .btn-danger { padding: 4px 8px; font-size: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>File Exchange</h1>
+  <p>Secure file upload service</p>
+</header>
+
+<main>
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-icon">&#x1F4C1;</div>
+    <p>Drag &amp; drop files here, or click to browse</p>
+    <button type="button" class="btn btn-primary" id="browseBtn">Choose File</button>
+    <input type="file" id="fileInput">
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container" id="progressContainer">
+    <div class="progress-label" id="progressLabel">Uploading... 0%</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="message" id="messageBox"></div>
+
+  <!-- File List -->
+  <section class="file-list">
+    <div class="file-list-header">
+      <h2>Files</h2>
+      <span class="file-count" id="fileCount"></span>
+    </div>
+    <div id="fileListContent">
+      <div class="loading">Loading files...</div>
+    </div>
+  </section>
+</main>
+
+<!-- Full-page drag overlay -->
+<div class="drag-overlay" id="dragOverlay"><span>Drop file to upload</span></div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ── DOM Refs ── */
+  var uploadZone = document.getElementById('uploadZone');
+  var fileInput = document.getElementById('fileInput');
+  var browseBtn = document.getElementById('browseBtn');
+  var progressContainer = document.getElementById('progressContainer');
+  var progressLabel = document.getElementById('progressLabel');
+  var progressFill = document.getElementById('progressFill');
+  var messageBox = document.getElementById('messageBox');
+  var fileListContent = document.getElementById('fileListContent');
+  var fileCount = document.getElementById('fileCount');
+  var dragOverlay = document.getElementById('dragOverlay');
+
+  /* ── Helpers ── */
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+    return (bytes / 1073741824).toFixed(1) + ' GB';
+  }
+
+  function formatDate(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function showMessage(text, type) {
+    messageBox.textContent = text;
+    messageBox.className = 'message visible ' + type;
+    setTimeout(function() {
+      messageBox.className = 'message';
+    }, 5000);
+  }
+
+  function setProgress(percent) {
+    progressFill.style.width = percent + '%';
+    progressLabel.textContent = 'Uploading... ' + percent + '%';
+  }
+
+  /* ── Upload ── */
+
+  function uploadFile(file) {
+    var xhr = new XMLHttpRequest();
+    var formData = new FormData();
+    formData.append('file', file);
+
+    /* Show progress */
+    progressContainer.classList.add('active');
+    setProgress(0);
+    messageBox.className = 'message';
+
+    xhr.upload.addEventListener('progress', function(e) {
+      if (e.lengthComputable) {
+        var pct = Math.round((e.loaded / e.total) * 100);
+        setProgress(pct);
+      }
+    });
+
+    xhr.addEventListener('load', function() {
+      progressContainer.classList.remove('active');
+      progressFill.style.width = '0%';
+
+      if (xhr.status === 201) {
+        var data;
+        try { data = JSON.parse(xhr.responseText); } catch(e) { data = null; }
+        var name = data && data.originalName ? data.originalName : file.name;
+        showMessage('Uploaded: ' + name + ' (' + formatSize(file.size) + ')', 'success');
+        fetchFiles();
+      } else {
+        var err;
+        try { err = JSON.parse(xhr.responseText); } catch(e) { err = null; }
+        var msg = (err && err.error) ? err.error : 'Upload failed (HTTP ' + xhr.status + ')';
+        showMessage(msg, 'error');
+      }
+    });
+
+    xhr.addEventListener('error', function() {
+      progressContainer.classList.remove('active');
+      progressFill.style.width = '0%';
+      showMessage('Network error — check your connection', 'error');
+    });
+
+    xhr.addEventListener('abort', function() {
+      progressContainer.classList.remove('active');
+      progressFill.style.width = '0%';
+      showMessage('Upload aborted', 'error');
+    });
+
+    xhr.open('POST', '/api/upload');
+    xhr.send(formData);
+  }
+
+  /* ── File List ── */
+
+  function fetchFiles() {
+    fetch('/api/files?limit=200&offset=0')
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        renderFiles(data.files || [], data.total || 0);
+      })
+      .catch(function() {
+        fileListContent.textContent = '';
+        var errDiv = document.createElement('div');
+        errDiv.className = 'loading';
+        errDiv.textContent = 'Failed to load files';
+        fileListContent.appendChild(errDiv);
+      });
+  }
+
+  function renderFiles(files, total) {
+    fileCount.textContent = total + ' file' + (total !== 1 ? 's' : '');
+
+    /* Clear previous content safely */
+    while (fileListContent.firstChild) {
+      fileListContent.removeChild(fileListContent.firstChild);
+    }
+
+    if (files.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+
+      var icon = document.createElement('div');
+      icon.className = 'empty-icon';
+      icon.textContent = '\uD83D\uDCC2';
+      empty.appendChild(icon);
+
+      var p = document.createElement('p');
+      p.textContent = 'No files uploaded yet';
+      empty.appendChild(p);
+
+      fileListContent.appendChild(empty);
+      return;
+    }
+
+    var table = document.createElement('table');
+    table.className = 'file-table';
+
+    /* Header */
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+
+    var cols = [
+      { label: 'Name', cls: '' },
+      { label: 'Size', cls: '' },
+      { label: 'Type', cls: 'col-type' },
+      { label: 'Date', cls: 'col-date' },
+      { label: '', cls: '' }
+    ];
+
+    for (var i = 0; i < cols.length; i++) {
+      var th = document.createElement('th');
+      th.textContent = cols[i].label;
+      if (cols[i].cls) th.className = cols[i].cls;
+      headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    /* Body */
+    var tbody = document.createElement('tbody');
+
+    for (var j = 0; j < files.length; j++) {
+      var file = files[j];
+      var tr = document.createElement('tr');
+
+      /* Name */
+      var tdName = document.createElement('td');
+      tdName.className = 'file-name';
+      tdName.textContent = file.originalName;
+      tdName.title = file.originalName;
+      tr.appendChild(tdName);
+
+      /* Size */
+      var tdSize = document.createElement('td');
+      tdSize.textContent = formatSize(file.size);
+      tr.appendChild(tdSize);
+
+      /* Type */
+      var tdType = document.createElement('td');
+      tdType.className = 'col-type';
+      tdType.textContent = file.mimeType.split('/').pop().toUpperCase();
+      tr.appendChild(tdType);
+
+      /* Date */
+      var tdDate = document.createElement('td');
+      tdDate.className = 'col-date';
+      tdDate.textContent = formatDate(file.uploadedAt);
+      tr.appendChild(tdDate);
+
+      /* Actions */
+      var tdActions = document.createElement('td');
+      tdActions.className = 'file-actions';
+
+      var dlLink = document.createElement('a');
+      dlLink.className = 'btn btn-download';
+      dlLink.href = '/api/files/' + encodeURIComponent(file.id);
+      dlLink.textContent = 'Download';
+      tdActions.appendChild(dlLink);
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-danger';
+      delBtn.textContent = 'Delete';
+      delBtn.setAttribute('data-id', file.id);
+      delBtn.setAttribute('data-name', file.originalName);
+      delBtn.addEventListener('click', handleDelete);
+      tdActions.appendChild(delBtn);
+
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    fileListContent.appendChild(table);
+  }
+
+  /* ── Delete ── */
+
+  function handleDelete(e) {
+    var btn = e.currentTarget;
+    var id = btn.getAttribute('data-id');
+    var name = btn.getAttribute('data-name');
+
+    if (!confirm('Delete "' + name + '"?')) return;
+
+    fetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function(res) {
+        if (res.ok) {
+          showMessage('Deleted: ' + name, 'success');
+          fetchFiles();
+        } else {
+          return res.json().then(function(data) {
+            showMessage(data.error || 'Delete failed', 'error');
+          });
+        }
+      })
+      .catch(function() {
+        showMessage('Network error — could not delete', 'error');
+      });
+  }
+
+  /* ── Drag & Drop (upload zone) ── */
+
+  uploadZone.addEventListener('click', function(e) {
+    if (e.target === browseBtn || browseBtn.contains(e.target)) return;
+    fileInput.click();
+  });
+
+  browseBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files.length > 0) {
+      uploadFile(fileInput.files[0]);
+      fileInput.value = '';
+    }
+  });
+
+  uploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone.addEventListener('dragleave', function() {
+    uploadZone.classList.remove('dragover');
+  });
+
+  uploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      uploadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  /* ── Full-page drag overlay ── */
+  var dragCounter = 0;
+
+  document.addEventListener('dragenter', function(e) {
+    e.preventDefault();
+    dragCounter++;
+    dragOverlay.classList.add('active');
+  });
+
+  document.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      dragOverlay.classList.remove('active');
+    }
+  });
+
+  document.addEventListener('dragover', function(e) {
+    e.preventDefault();
+  });
+
+  document.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dragCounter = 0;
+    dragOverlay.classList.remove('active');
+    if (e.dataTransfer.files.length > 0) {
+      uploadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  /* ── Init ── */
+  fetchFiles();
+
+})();
+</script>
+
+</body>
+</html>
