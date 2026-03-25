@@ -1,7 +1,13 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_UPLOAD_DIR = path.resolve(__dirname, '..', 'uploads');
+
 const config = {
   port: parseInt(process.env.PORT, 10) || 3500,
 
-  uploadDir: process.env.UPLOAD_DIR || '/home/client/uploads',
+  uploadDir: process.env.UPLOAD_DIR || DEFAULT_UPLOAD_DIR,
 
   maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 524_288_000,
 
