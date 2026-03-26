@@ -7,7 +7,7 @@ const DEFAULT_UPLOAD_DIR = path.resolve(__dirname, '..', 'uploads');
 const config = {
   port: parseInt(process.env.PORT, 10) || 3500,
 
-  uploadDir: process.env.UPLOAD_DIR || DEFAULT_UPLOAD_DIR,
+  uploadDir: path.resolve(process.env.UPLOAD_DIR || DEFAULT_UPLOAD_DIR),
 
   maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 524_288_000,
 
