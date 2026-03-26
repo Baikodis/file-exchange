@@ -85,9 +85,12 @@ router.post(
       await fsp.chmod(storedPath, 0o640);
 
       // g. Create and save metadata
+      // Multer decodes filenames as latin1; re-decode as UTF-8 for Cyrillic support
+      const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+
       const metadata = createMetadata({
         id,
-        originalName: req.file.originalname,
+        originalName,
         storedName,
         mimeType: req.detectedMime,
         size: req.file.size,
