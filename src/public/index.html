@@ -323,6 +323,123 @@ main {
   border-radius: var(--radius);
 }
 
+/* ── Checkbox ── */
+.file-table .col-check {
+  width: 36px;
+  text-align: center;
+}
+
+.file-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.file-check:hover {
+  border-color: var(--accent);
+}
+
+.file-check:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.file-check:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.file-table tr.selected td {
+  background: rgba(88, 166, 255, 0.06);
+}
+
+/* ── Batch Action Bar ── */
+.batch-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 900;
+  animation: slideUp 0.2s ease;
+}
+
+.batch-bar.active {
+  display: flex;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.batch-count {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.btn-batch {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-hover);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-batch:hover {
+  border-color: var(--accent);
+}
+
+.btn-batch.download {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-batch.download:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-batch.delete {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-batch.delete:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-batch.cancel {
+  color: var(--text-muted);
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   main { padding: 16px 12px 32px; }
@@ -331,6 +448,9 @@ main {
   .file-name { max-width: 140px; }
   .col-type, .col-date { display: none; }
   .btn-download, .btn-danger { padding: 4px 8px; font-size: 0.75rem; }
+  .batch-bar { padding: 8px 12px; gap: 8px; }
+  .batch-count { font-size: 0.8rem; }
+  .btn-batch { padding: 5px 10px; font-size: 0.75rem; }
 }
 </style>
 </head>
@@ -373,6 +493,14 @@ main {
   </section>
 </main>
 
+<!-- Batch Action Bar -->
+<div class="batch-bar" id="batchBar">
+  <span class="batch-count" id="batchCount">0 selected</span>
+  <button type="button" class="btn-batch download" id="batchDownload">Download</button>
+  <button type="button" class="btn-batch delete" id="batchDelete">Delete</button>
+  <button type="button" class="btn-batch cancel" id="batchCancel">Cancel</button>
+</div>
+
 <!-- Full-page drag overlay -->
 <div class="drag-overlay" id="dragOverlay"><span>Drop files to upload</span></div>
 
@@ -391,6 +519,41 @@ main {
   var fileListContent = document.getElementById('fileListContent');
   var fileCount = document.getElementById('fileCount');
   var dragOverlay = document.getElementById('dragOverlay');
+  var batchBar = document.getElementById('batchBar');
+  var batchCount = document.getElementById('batchCount');
+  var batchDownload = document.getElementById('batchDownload');
+  var batchDelete = document.getElementById('batchDelete');
+  var batchCancel = document.getElementById('batchCancel');
+
+  /* ── Selection State ── */
+  var selectedFiles = {}; // { id: { name, id } }
+
+  function getSelectedIds() {
+    return Object.keys(selectedFiles);
+  }
+
+  function updateBatchBar() {
+    var count = getSelectedIds().length;
+    if (count > 0) {
+      batchCount.textContent = count + ' selected';
+      batchBar.classList.add('active');
+    } else {
+      batchBar.classList.remove('active');
+    }
+  }
+
+  function clearSelection() {
+    selectedFiles = {};
+    var checks = document.querySelectorAll('.file-check');
+    for (var i = 0; i < checks.length; i++) {
+      checks[i].checked = false;
+      var row = checks[i].closest('tr');
+      if (row) row.classList.remove('selected');
+    }
+    var selectAll = document.getElementById('selectAll');
+    if (selectAll) selectAll.checked = false;
+    updateBatchBar();
+  }
 
   /* ── Helpers ── */
 
@@ -534,6 +697,8 @@ main {
   }
 
   function renderFiles(files, total) {
+    selectedFiles = {};
+    updateBatchBar();
     fileCount.textContent = total + ' file' + (total !== 1 ? 's' : '');
 
     /* Clear previous content safely */
@@ -565,6 +730,33 @@ main {
     var thead = document.createElement('thead');
     var headRow = document.createElement('tr');
 
+    /* Select-all checkbox column */
+    var thCheck = document.createElement('th');
+    thCheck.className = 'col-check';
+    var selectAllCb = document.createElement('input');
+    selectAllCb.type = 'checkbox';
+    selectAllCb.className = 'file-check';
+    selectAllCb.id = 'selectAll';
+    selectAllCb.addEventListener('change', function() {
+      var checks = document.querySelectorAll('.row-check');
+      for (var k = 0; k < checks.length; k++) {
+        checks[k].checked = selectAllCb.checked;
+        var row = checks[k].closest('tr');
+        var fid = checks[k].getAttribute('data-id');
+        var fname = checks[k].getAttribute('data-name');
+        if (selectAllCb.checked) {
+          selectedFiles[fid] = { id: fid, name: fname };
+          if (row) row.classList.add('selected');
+        } else {
+          delete selectedFiles[fid];
+          if (row) row.classList.remove('selected');
+        }
+      }
+      updateBatchBar();
+    });
+    thCheck.appendChild(selectAllCb);
+    headRow.appendChild(thCheck);
+
     var cols = [
       { label: 'Name', cls: '' },
       { label: 'Size', cls: '' },
@@ -588,6 +780,35 @@ main {
     for (var j = 0; j < files.length; j++) {
       var file = files[j];
       var tr = document.createElement('tr');
+
+      /* Checkbox */
+      var tdCheck = document.createElement('td');
+      tdCheck.className = 'col-check';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'file-check row-check';
+      cb.setAttribute('data-id', file.id);
+      cb.setAttribute('data-name', file.originalName);
+      cb.addEventListener('change', (function(checkbox, fileData) {
+        return function() {
+          var row = checkbox.closest('tr');
+          if (checkbox.checked) {
+            selectedFiles[fileData.id] = { id: fileData.id, name: fileData.originalName };
+            if (row) row.classList.add('selected');
+          } else {
+            delete selectedFiles[fileData.id];
+            if (row) row.classList.remove('selected');
+          }
+          updateBatchBar();
+          /* Sync select-all state */
+          var allCb = document.getElementById('selectAll');
+          var total = document.querySelectorAll('.row-check').length;
+          var checked = document.querySelectorAll('.row-check:checked').length;
+          if (allCb) allCb.checked = (total > 0 && total === checked);
+        };
+      })(cb, file));
+      tdCheck.appendChild(cb);
+      tr.appendChild(tdCheck);
 
       /* Name */
       var tdName = document.createElement('td');
@@ -664,6 +885,65 @@ main {
         showMessage('Network error — could not delete', 'error');
       });
   }
+
+  /* ── Batch Actions ── */
+
+  batchCancel.addEventListener('click', clearSelection);
+
+  batchDelete.addEventListener('click', function() {
+    var ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm('Delete ' + ids.length + ' file' + (ids.length !== 1 ? 's' : '') + '?')) return;
+
+    var done = 0;
+    var failed = 0;
+
+    function deleteNext(idx) {
+      if (idx >= ids.length) {
+        clearSelection();
+        fetchFiles();
+        if (failed === 0) {
+          showMessage('Deleted ' + done + ' file' + (done !== 1 ? 's' : ''), 'success');
+        } else {
+          showMessage('Deleted ' + done + ', failed ' + failed, 'error');
+        }
+        return;
+      }
+      fetch('/api/files/' + encodeURIComponent(ids[idx]), { method: 'DELETE' })
+        .then(function(res) {
+          if (res.ok) { done++; } else { failed++; }
+          deleteNext(idx + 1);
+        })
+        .catch(function() {
+          failed++;
+          deleteNext(idx + 1);
+        });
+    }
+    deleteNext(0);
+  });
+
+  batchDownload.addEventListener('click', function() {
+    var ids = getSelectedIds();
+    if (ids.length === 0) return;
+
+    function downloadNext(idx) {
+      if (idx >= ids.length) {
+        clearSelection();
+        showMessage('Downloaded ' + ids.length + ' file' + (ids.length !== 1 ? 's' : ''), 'success');
+        return;
+      }
+      var file = selectedFiles[ids[idx]];
+      var a = document.createElement('a');
+      a.href = '/api/files/' + encodeURIComponent(ids[idx]);
+      a.download = file ? file.name : '';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function() { downloadNext(idx + 1); }, 300);
+    }
+    downloadNext(0);
+  });
 
   /* ── Drag & Drop (upload zone) ── */
 
