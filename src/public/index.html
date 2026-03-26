@@ -346,8 +346,8 @@ main {
   <div class="upload-zone" id="uploadZone">
     <div class="upload-icon">&#x1F4C1;</div>
     <p>Drag &amp; drop files here, or click to browse</p>
-    <button type="button" class="btn btn-primary" id="browseBtn">Choose File</button>
-    <input type="file" id="fileInput">
+    <button type="button" class="btn btn-primary" id="browseBtn">Choose Files</button>
+    <input type="file" id="fileInput" multiple>
   </div>
 
   <!-- Progress Bar -->
@@ -374,7 +374,7 @@ main {
 </main>
 
 <!-- Full-page drag overlay -->
-<div class="drag-overlay" id="dragOverlay"><span>Drop file to upload</span></div>
+<div class="drag-overlay" id="dragOverlay"><span>Drop files to upload</span></div>
 
 <script>
 (function() {
@@ -424,55 +424,96 @@ main {
 
   /* ── Upload ── */
 
-  function uploadFile(file) {
-    var xhr = new XMLHttpRequest();
-    var formData = new FormData();
-    formData.append('file', file);
+  var uploading = false;
 
-    /* Show progress */
-    progressContainer.classList.add('active');
-    setProgress(0);
+  function uploadFile(file, label) {
+    return new Promise(function(resolve) {
+      var xhr = new XMLHttpRequest();
+      var formData = new FormData();
+      formData.append('file', file);
+
+      var prefix = label ? label + ' ' : '';
+
+      progressContainer.classList.add('active');
+      progressLabel.textContent = prefix + 'Uploading... 0%';
+      progressFill.style.width = '0%';
+
+      xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+          var pct = Math.round((e.loaded / e.total) * 100);
+          progressFill.style.width = pct + '%';
+          progressLabel.textContent = prefix + 'Uploading... ' + pct + '%';
+        }
+      });
+
+      xhr.addEventListener('load', function() {
+        if (xhr.status === 201) {
+          var data;
+          try { data = JSON.parse(xhr.responseText); } catch(e) { data = null; }
+          resolve({ ok: true, name: (data && data.originalName) || file.name, size: file.size });
+        } else {
+          var err;
+          try { err = JSON.parse(xhr.responseText); } catch(e) { err = null; }
+          resolve({ ok: false, name: file.name, error: (err && err.error) || 'HTTP ' + xhr.status });
+        }
+      });
+
+      xhr.addEventListener('error', function() {
+        resolve({ ok: false, name: file.name, error: 'Network error' });
+      });
+
+      xhr.addEventListener('abort', function() {
+        resolve({ ok: false, name: file.name, error: 'Aborted' });
+      });
+
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
+    });
+  }
+
+  function uploadFiles(fileList) {
+    if (uploading || fileList.length === 0) return;
+    uploading = true;
     messageBox.className = 'message';
 
-    xhr.upload.addEventListener('progress', function(e) {
-      if (e.lengthComputable) {
-        var pct = Math.round((e.loaded / e.total) * 100);
-        setProgress(pct);
-      }
-    });
+    var files = Array.prototype.slice.call(fileList);
+    var total = files.length;
+    var succeeded = 0;
+    var failed = [];
+    var index = 0;
 
-    xhr.addEventListener('load', function() {
-      progressContainer.classList.remove('active');
-      progressFill.style.width = '0%';
-
-      if (xhr.status === 201) {
-        var data;
-        try { data = JSON.parse(xhr.responseText); } catch(e) { data = null; }
-        var name = data && data.originalName ? data.originalName : file.name;
-        showMessage('Uploaded: ' + name + ' (' + formatSize(file.size) + ')', 'success');
+    function next() {
+      if (index >= total) {
+        progressContainer.classList.remove('active');
+        progressFill.style.width = '0%';
+        uploading = false;
         fetchFiles();
-      } else {
-        var err;
-        try { err = JSON.parse(xhr.responseText); } catch(e) { err = null; }
-        var msg = (err && err.error) ? err.error : 'Upload failed (HTTP ' + xhr.status + ')';
-        showMessage(msg, 'error');
+
+        if (failed.length === 0) {
+          showMessage('Uploaded ' + succeeded + ' file' + (succeeded !== 1 ? 's' : ''), 'success');
+        } else if (succeeded === 0) {
+          showMessage('Failed: ' + failed.join(', '), 'error');
+        } else {
+          showMessage('Uploaded ' + succeeded + ', failed ' + failed.length + ': ' + failed.join(', '), 'error');
+        }
+        return;
       }
-    });
 
-    xhr.addEventListener('error', function() {
-      progressContainer.classList.remove('active');
-      progressFill.style.width = '0%';
-      showMessage('Network error — check your connection', 'error');
-    });
+      var file = files[index];
+      var label = total > 1 ? '[' + (index + 1) + '/' + total + ']' : '';
+      index++;
 
-    xhr.addEventListener('abort', function() {
-      progressContainer.classList.remove('active');
-      progressFill.style.width = '0%';
-      showMessage('Upload aborted', 'error');
-    });
+      uploadFile(file, label).then(function(result) {
+        if (result.ok) {
+          succeeded++;
+        } else {
+          failed.push(result.name + ' (' + result.error + ')');
+        }
+        next();
+      });
+    }
 
-    xhr.open('POST', '/api/upload');
-    xhr.send(formData);
+    next();
   }
 
   /* ── File List ── */
@@ -638,7 +679,7 @@ main {
 
   fileInput.addEventListener('change', function() {
     if (fileInput.files.length > 0) {
-      uploadFile(fileInput.files[0]);
+      uploadFiles(fileInput.files);
       fileInput.value = '';
     }
   });
@@ -656,7 +697,7 @@ main {
     e.preventDefault();
     uploadZone.classList.remove('dragover');
     if (e.dataTransfer.files.length > 0) {
-      uploadFile(e.dataTransfer.files[0]);
+      uploadFiles(e.dataTransfer.files);
     }
   });
 
@@ -687,7 +728,7 @@ main {
     dragCounter = 0;
     dragOverlay.classList.remove('active');
     if (e.dataTransfer.files.length > 0) {
-      uploadFile(e.dataTransfer.files[0]);
+      uploadFiles(e.dataTransfer.files);
     }
   });
 
