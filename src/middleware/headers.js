@@ -25,7 +25,8 @@ function securityHeaders(req, res, next) {
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
   // CORS — same origin only
-  res.setHeader('Access-Control-Allow-Origin', 'https://upload.baikodis.ru');
+  const corsOrigin = process.env.CORS_ORIGIN || 'https://upload.baikodis.ru';
+  res.setHeader('Access-Control-Allow-Origin', corsOrigin);
 
   next();
 }

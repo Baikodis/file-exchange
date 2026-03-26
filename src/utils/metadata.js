@@ -70,7 +70,7 @@ function createMetadata({ id, originalName, storedName, mimeType, size, sha256, 
 async function saveMetadata(uploadDir, id, metadata) {
   validateUUID(id);
   const metaPath = path.join(uploadDir, `${id}.meta.json`);
-  await fsp.writeFile(metaPath, JSON.stringify(metadata, null, 2), 'utf8');
+  await fsp.writeFile(metaPath, JSON.stringify(metadata, null, 2), { encoding: 'utf8', mode: 0o640 });
 }
 
 /**

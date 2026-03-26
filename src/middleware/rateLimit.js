@@ -19,13 +19,4 @@ const deleteLimiter = rateLimit({
   message: { error: 'Too many delete requests. Try again later.' },
 });
 
-/** 5 auth attempts per 15 minutes per IP (defense-in-depth behind Caddy). */
-const authLimiter = rateLimit({
-  windowMs: 900_000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many authentication attempts. Try again later.' },
-});
-
-export { uploadLimiter, deleteLimiter, authLimiter };
+export { uploadLimiter, deleteLimiter };

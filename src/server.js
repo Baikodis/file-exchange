@@ -22,6 +22,7 @@ const __dirname = path.dirname(__filename);
 /* ── Express app ── */
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(securityHeaders);
 app.use(httpLogger);
@@ -92,7 +93,7 @@ setInterval(cleanupExpiredFiles, ONE_HOUR);
 setTimeout(cleanupExpiredFiles, 5_000);
 
 /* ── Start server ── */
-app.listen(config.port, () => {
+app.listen(config.port, '127.0.0.1', () => {
   log('info', `File Exchange server started on port ${config.port}`, {
     uploadDir: config.uploadDir,
     maxFileSize: config.maxFileSize,
