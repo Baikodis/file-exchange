@@ -911,8 +911,17 @@ main {
       }
       fetch('/api/files/' + encodeURIComponent(ids[idx]), { method: 'DELETE' })
         .then(function(res) {
-          if (res.ok) { done++; } else { failed++; }
-          deleteNext(idx + 1);
+          if (res.ok) {
+            done++;
+            deleteNext(idx + 1);
+          } else if (res.status === 429) {
+            showMessage('Rate limit reached. Deleted ' + done + ' so far — wait a minute and retry the rest.', 'error');
+            clearSelection();
+            fetchFiles();
+          } else {
+            failed++;
+            deleteNext(idx + 1);
+          }
         })
         .catch(function() {
           failed++;
