@@ -85,8 +85,13 @@ router.post(
       await fsp.chmod(storedPath, 0o640);
 
       // g. Create and save metadata
-      // Multer decodes filenames as latin1; re-decode as UTF-8 for Cyrillic support
-      const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+      // Multer may decode filenames as latin1 (raw bytes) or as proper UTF-8.
+      // If the string already has chars > U+00FF (e.g. Cyrillic), it's valid UTF-8 — use as-is.
+      // Otherwise, re-decode latin1 bytes as UTF-8.
+      const hasUnicode = /[^\x00-\xFF]/.test(req.file.originalname);
+      const originalName = hasUnicode
+        ? req.file.originalname
+        : Buffer.from(req.file.originalname, 'latin1').toString('utf8');
 
       const metadata = createMetadata({
         id,
