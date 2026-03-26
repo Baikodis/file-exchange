@@ -15,20 +15,99 @@ Built for exchanging files between a browser and a server — no third-party ser
 - **Batch operations** — select multiple files to download or delete at once
 - **JSON logging** — structured logs with rotation, no credentials leaked
 
-## Quick Start
+## Deployment
+
+Deployment is split into two phases. **Phase 1 does not require root** and can be done by an unprivileged user or automated agent. **Phase 2 requires root** for the reverse proxy and TLS.
+
+### Phase 1 — App Setup (no root required)
 
 Requires **Node.js 20+**.
 
 ```bash
-git clone https://github.com/your-username/file-exchange.git
+git clone https://github.com/Baikodis/file-exchange.git
 cd file-exchange
 cp .env.example .env
-# Edit .env — set CORS_ORIGIN to your domain
-npm install
-npm start
 ```
 
-Server starts on `http://localhost:3500`. For production, put it behind a reverse proxy with TLS (see Caddy setup below).
+Edit `.env` — set at minimum:
+- `CORS_ORIGIN` — your domain (e.g. `https://files.example.com`)
+
+Then:
+
+```bash
+mkdir -p uploads/.logs
+npm install
+```
+
+**Test locally:**
+
+```bash
+npm start
+# Server starts on http://localhost:3500
+# Open in browser or: curl http://localhost:3500/api/files
+```
+
+**Run with PM2 (recommended):**
+
+```bash
+npx pm2 start ecosystem.config.cjs
+npx pm2 save
+```
+
+> Note: `pm2 startup` (systemd auto-start on reboot) requires root — see Phase 2.
+
+After Phase 1, the app is running on `http://localhost:3500`. It works, but has no TLS and no password protection. Proceed to Phase 2 for production use.
+
+### Phase 2 — Reverse Proxy & TLS (requires root)
+
+These commands must be run by the server administrator (root or sudo).
+
+**1. Install Caddy**
+
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update && sudo apt install caddy
+```
+
+**2. Configure Caddy with Basic Auth**
+
+```bash
+# Generate a random password (save it — you'll need it to log in)
+PASS=$(openssl rand -base64 32)
+echo "Password: $PASS"
+
+# Hash it for Caddy config
+HASH=$(caddy hash-password --plaintext "$PASS")
+```
+
+Copy `Caddyfile.example` to `/etc/caddy/Caddyfile`. Replace:
+- `your-domain.example.com` → your actual domain
+- `$2a$14$REPLACE_WITH_BCRYPT_HASH` → the hash from the command above
+
+```bash
+sudo systemctl restart caddy
+```
+
+**3. DNS**
+
+Create an A record pointing your domain to the server IP.
+
+**4. Firewall (if applicable)**
+
+```bash
+sudo ufw allow 80    # Let's Encrypt HTTP-01 challenge
+sudo ufw allow 443   # HTTPS
+```
+
+Port 3500 should **not** be exposed — Caddy proxies to it on localhost.
+
+**5. PM2 auto-start on reboot**
+
+```bash
+sudo env PATH=$PATH:/usr/bin npx pm2 startup systemd -u $(whoami) --hp $(eval echo ~$(whoami))
+```
 
 ## Configuration
 
@@ -41,7 +120,7 @@ All settings are in `.env`:
 | `MAX_FILE_SIZE` | `524288000` | Max file size in bytes (500 MB) |
 | `RATE_LIMIT_UPLOADS` | `10` | Max uploads per minute per IP |
 | `FILE_TTL_DAYS` | `7` | Days before auto-deletion |
-| `CORS_ORIGIN` | — | Your domain (e.g. `https://files.example.com`) |
+| `CORS_ORIGIN` | request host | Your domain (e.g. `https://files.example.com`) |
 | `ALLOWED_TYPES` | See .env.example | Comma-separated MIME whitelist |
 
 ## Allowed File Types
@@ -86,72 +165,20 @@ All endpoints return JSON.
 }
 ```
 
-## Production Setup with Caddy
-
-[Caddy](https://caddyserver.com/) provides automatic HTTPS and Basic Auth.
-
-### 1. Install Caddy
-
-```bash
-sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update && sudo apt install caddy
-```
-
-### 2. Configure
-
-```bash
-# Generate a password
-openssl rand -base64 32
-# Hash it for Caddy
-caddy hash-password --plaintext 'your-generated-password'
-```
-
-Copy `Caddyfile.example` to `/etc/caddy/Caddyfile`, replace the domain and password hash, then:
-
-```bash
-sudo systemctl restart caddy
-```
-
-### 3. DNS
-
-Create an A record pointing your domain to your server's IP.
-
-### 4. Firewall
-
-```bash
-sudo ufw allow 80    # Required for Let's Encrypt HTTP-01 challenge
-sudo ufw allow 443   # HTTPS
-```
-
-Port 3500 should **not** be exposed — Caddy proxies to it on localhost.
-
-## Running with PM2
-
-```bash
-npm install -g pm2
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup  # generates a systemd service for auto-start on reboot
-```
-
 ## Server Administration
 
-Commands for the server admin (requires shell access, typically as root).
-
-### PM2 (process manager)
+### PM2
 
 ```bash
 pm2 status                    # check if running
-pm2 restart file-exchange     # restart after config changes
-pm2 logs file-exchange        # view logs (Ctrl+C to exit)
-pm2 logs file-exchange --lines 100  # last 100 lines
+pm2 restart file-exchange     # restart after .env changes
+pm2 logs file-exchange        # view logs
+pm2 logs file-exchange --lines 100
 ```
 
-If PM2 watch is enabled (default in ecosystem.config.cjs), the server auto-restarts when files in `src/` change. Manual restart is only needed for `.env` changes.
+PM2 watch is enabled by default — the server auto-restarts when files in `src/` change. Manual restart is only needed for `.env` changes.
 
-### Caddy (reverse proxy + TLS)
+### Caddy
 
 ```bash
 systemctl status caddy        # check status
@@ -162,39 +189,21 @@ journalctl -u caddy -f        # view logs
 ### Changing the Basic Auth password
 
 ```bash
-# Generate new password
-openssl rand -base64 32
-# Hash it
-caddy hash-password --plaintext 'new-password'
-# Edit Caddyfile — replace the hash after "admin"
-nano /etc/caddy/Caddyfile
-systemctl restart caddy
-```
-
-### Firewall
-
-```bash
-ufw status                    # current rules
-ufw allow 443                 # open HTTPS
-ufw deny 3500                 # ensure app port is not directly exposed
+PASS=$(openssl rand -base64 32)
+echo "New password: $PASS"
+caddy hash-password --plaintext "$PASS"
+# Replace the hash in /etc/caddy/Caddyfile, then:
+sudo systemctl restart caddy
 ```
 
 ### Disk and uploads
 
 ```bash
-du -sh /path/to/uploads/      # check upload directory size
-ls /path/to/uploads/*.meta.json | wc -l   # count files
+du -sh uploads/                              # upload directory size
+ls uploads/*.meta.json 2>/dev/null | wc -l   # file count
 ```
 
-Files auto-delete after TTL expires (checked hourly). To manually remove all files:
-
-```bash
-rm /path/to/uploads/*.meta.json /path/to/uploads/*.{jpg,png,pdf,zip,...}
-```
-
-### Sandboxed environments
-
-If your app runs inside a sandbox (e.g. container or restricted user) where PM2 cannot write to `~/.pm2`, the admin must restart PM2 from a privileged shell (root or via recovery console). The sandbox can still edit source files — PM2 watch will pick up changes automatically if enabled.
+Files auto-delete after TTL expires (checked hourly).
 
 ## Security
 
