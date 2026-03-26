@@ -1,0 +1,29 @@
+{
+  "name": "file-exchange",
+  "version": "1.0.0",
+  "description": "Self-hosted secure file upload service with drag-and-drop UI, magic bytes validation, and automatic TTL cleanup",
+  "type": "module",
+  "main": "src/server.js",
+  "license": "MIT",
+  "author": "Vladislav Baitelman",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node --env-file=.env src/server.js",
+    "dev": "node --watch --env-file=.env src/server.js",
+    "pm2": "npx pm2 delete file-exchange 2>/dev/null; npx pm2 start ecosystem.config.cjs && npx pm2 save",
+    "pm2:stop": "npx pm2 stop file-exchange",
+    "pm2:logs": "npx pm2 logs file-exchange --lines 50 --nostream"
+  },
+  "dependencies": {
+    "express": "^4.21",
+    "express-rate-limit": "^7",
+    "morgan": "^1",
+    "multer": "^1.4.4-lts.1",
+    "uuid": "^11"
+  },
+  "devDependencies": {
+    "pm2": "^6.0.14"
+  }
+}
