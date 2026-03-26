@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Exchange</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-hover: #1c2129;
+  --border: #30363d;
+  --border-active: #58a6ff;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-hover: #79c0ff;
+  --success: #3fb950;
+  --error: #f85149;
+  --danger: #da3633;
+  --danger-hover: #f85149;
+  --radius: 8px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+header {
+  padding: 24px 0 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+header p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+/* ── Upload Zone ── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  border-color: var(--border-active);
+  background: rgba(88, 166, 255, 0.04);
+}
+
+.upload-zone.dragover {
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.upload-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.upload-zone p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+
+.upload-zone input[type="file"] {
+  display: none;
+}
+
+.btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-active);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+  padding: 4px 12px;
+  font-size: 0.8rem;
+}
+
+.btn-danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-download {
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.btn-download:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Progress Bar ── */
+.progress-container {
+  margin-bottom: 20px;
+  display: none;
+}
+
+.progress-container.active {
+  display: block;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.15s ease;
+}
+
+/* ── Messages ── */
+.message {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.message.visible {
+  display: block;
+}
+
+.message.success {
+  background: rgba(63, 185, 80, 0.1);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+  color: var(--success);
+}
+
+.message.error {
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  color: var(--error);
+}
+
+/* ── File List ── */
+.file-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.file-list-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.file-count {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+
+.empty-state .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+}
+
+/* ── Table ── */
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.file-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.file-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.file-table tr:hover td {
+  background: var(--surface);
+}
+
+.file-name {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-actions {
+  white-space: nowrap;
+}
+
+.file-actions a,
+.file-actions button {
+  margin-right: 6px;
+}
+
+.file-actions a:last-child,
+.file-actions button:last-child {
+  margin-right: 0;
+}
+
+/* ── Drag Overlay ── */
+.drag-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(88, 166, 255, 0.06);
+  border: 3px dashed var(--accent);
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.drag-overlay.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drag-overlay span {
+  font-size: 1.2rem;
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--bg);
+  padding: 12px 28px;
+  border-radius: var(--radius);
+}
+
+/* ── Checkbox ── */
+.file-table .col-check {
+  width: 36px;
+  text-align: center;
+}
+
+.file-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.file-check:hover {
+  border-color: var(--accent);
+}
+
+.file-check:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.file-check:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.file-table tr.selected td {
+  background: rgba(88, 166, 255, 0.06);
+}
+
+/* ── Batch Action Bar ── */
+.batch-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 900;
+  animation: slideUp 0.2s ease;
+}
+
+.batch-bar.active {
+  display: flex;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.batch-count {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.btn-batch {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-hover);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-batch:hover {
+  border-color: var(--accent);
+}
+
+.btn-batch.download {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-batch.download:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-batch.delete {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-batch.delete:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-batch.cancel {
+  color: var(--text-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  main { padding: 16px 12px 32px; }
+  .upload-zone { padding: 32px 16px; }
+  .file-table th, .file-table td { padding: 8px 6px; font-size: 0.8rem; }
+  .file-name { max-width: 140px; }
+  .col-type, .col-date { display: none; }
+  .btn-download, .btn-danger { padding: 4px 8px; font-size: 0.75rem; }
+  .batch-bar { padding: 8px 12px; gap: 8px; }
+  .batch-count { font-size: 0.8rem; }
+  .btn-batch { padding: 5px 10px; font-size: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>File Exchange</h1>
+  <p>Secure file upload service</p>
+</header>
+
+<main>
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-icon">&#x1F4C1;</div>
+    <p>Drag &amp; drop files here, or click to browse</p>
+    <button type="button" class="btn btn-primary" id="browseBtn">Choose Files</button>
+    <input type="file" id="fileInput" multiple>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container" id="progressContainer">
+    <div class="progress-label" id="progressLabel">Uploading... 0%</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="message" id="messageBox"></div>
+
+  <!-- File List -->
+  <section class="file-list">
+    <div class="file-list-header">
+      <h2>Files</h2>
+      <span class="file-count" id="fileCount"></span>
+    </div>
+    <div id="fileListContent">
+      <div class="loading">Loading files...</div>
+    </div>
+  </section>
+</main>
+
+<!-- Batch Action Bar -->
+<div class="batch-bar" id="batchBar">
+  <span class="batch-count" id="batchCount">0 selected</span>
+  <button type="button" class="btn-batch download" id="batchDownload">Download</button>
+  <button type="button" class="btn-batch delete" id="batchDelete">Delete</button>
+  <button type="button" class="btn-batch cancel" id="batchCancel">Cancel</button>
+</div>
+
+<!-- Full-page drag overlay -->
+<div class="drag-overlay" id="dragOverlay"><span>Drop files to upload</span></div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ── DOM Refs ── */
+  var uploadZone = document.getElementById('uploadZone');
+  var fileInput = document.getElementById('fileInput');
+  var browseBtn = document.getElementById('browseBtn');
+  var progressContainer = document.getElementById('progressContainer');
+  var progressLabel = document.getElementById('progressLabel');
+  var progressFill = document.getElementById('progressFill');
+  var messageBox = document.getElementById('messageBox');
+  var fileListContent = document.getElementById('fileListContent');
+  var fileCount = document.getElementById('fileCount');
+  var dragOverlay = document.getElementById('dragOverlay');
+  var batchBar = document.getElementById('batchBar');
+  var batchCount = document.getElementById('batchCount');
+  var batchDownload = document.getElementById('batchDownload');
+  var batchDelete = document.getElementById('batchDelete');
+  var batchCancel = document.getElementById('batchCancel');
+
+  /* ── Selection State ── */
+  var selectedFiles = {}; // { id: { name, id } }
+
+  function getSelectedIds() {
+    return Object.keys(selectedFiles);
+  }
+
+  function updateBatchBar() {
+    var count = getSelectedIds().length;
+    if (count > 0) {
+      batchCount.textContent = count + ' selected';
+      batchBar.classList.add('active');
+    } else {
+      batchBar.classList.remove('active');
+    }
+  }
+
+  function clearSelection() {
+    selectedFiles = {};
+    var checks = document.querySelectorAll('.file-check');
+    for (var i = 0; i < checks.length; i++) {
+      checks[i].checked = false;
+      var row = checks[i].closest('tr');
+      if (row) row.classList.remove('selected');
+    }
+    var selectAll = document.getElementById('selectAll');
+    if (selectAll) selectAll.checked = false;
+    updateBatchBar();
+  }
+
+  /* ── Helpers ── */
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+    return (bytes / 1073741824).toFixed(1) + ' GB';
+  }
+
+  function formatDate(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function showMessage(text, type) {
+    messageBox.textContent = text;
+    messageBox.className = 'message visible ' + type;
+    setTimeout(function() {
+      messageBox.className = 'message';
+    }, 5000);
+  }
+
+  function setProgress(percent) {
+    progressFill.style.width = percent + '%';
+    progressLabel.textContent = 'Uploading... ' + percent + '%';
+  }
+
+  /* ── Upload ── */
+
+  var uploading = false;
+
+  function uploadFile(file, label) {
+    return new Promise(function(resolve) {
+      var xhr = new XMLHttpRequest();
+      var formData = new FormData();
+      formData.append('file', file);
+
+      var prefix = label ? label + ' ' : '';
+
+      progressContainer.classList.add('active');
+      progressLabel.textContent = prefix + 'Uploading... 0%';
+      progressFill.style.width = '0%';
+
+      xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+          var pct = Math.round((e.loaded / e.total) * 100);
+          progressFill.style.width = pct + '%';
+          progressLabel.textContent = prefix + 'Uploading... ' + pct + '%';
+        }
+      });
+
+      xhr.addEventListener('load', function() {
+        if (xhr.status === 201) {
+          var data;
+          try { data = JSON.parse(xhr.responseText); } catch(e) { data = null; }
+          resolve({ ok: true, name: (data && data.originalName) || file.name, size: file.size });
+        } else {
+          var err;
+          try { err = JSON.parse(xhr.responseText); } catch(e) { err = null; }
+          resolve({ ok: false, name: file.name, error: (err && err.error) || 'HTTP ' + xhr.status });
+        }
+      });
+
+      xhr.addEventListener('error', function() {
+        resolve({ ok: false, name: file.name, error: 'Network error' });
+      });
+
+      xhr.addEventListener('abort', function() {
+        resolve({ ok: false, name: file.name, error: 'Aborted' });
+      });
+
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
+    });
+  }
+
+  function uploadFiles(fileList) {
+    if (uploading || fileList.length === 0) return;
+    uploading = true;
+    messageBox.className = 'message';
+
+    var files = Array.prototype.slice.call(fileList);
+    var total = files.length;
+    var succeeded = 0;
+    var failed = [];
+    var index = 0;
+
+    function next() {
+      if (index >= total) {
+        progressContainer.classList.remove('active');
+        progressFill.style.width = '0%';
+        uploading = false;
+        fetchFiles();
+
+        if (failed.length === 0) {
+          showMessage('Uploaded ' + succeeded + ' file' + (succeeded !== 1 ? 's' : ''), 'success');
+        } else if (succeeded === 0) {
+          showMessage('Failed: ' + failed.join(', '), 'error');
+        } else {
+          showMessage('Uploaded ' + succeeded + ', failed ' + failed.length + ': ' + failed.join(', '), 'error');
+        }
+        return;
+      }
+
+      var file = files[index];
+      var label = total > 1 ? '[' + (index + 1) + '/' + total + ']' : '';
+      index++;
+
+      uploadFile(file, label).then(function(result) {
+        if (result.ok) {
+          succeeded++;
+        } else {
+          failed.push(result.name + ' (' + result.error + ')');
+        }
+        next();
+      });
+    }
+
+    next();
+  }
+
+  /* ── File List ── */
+
+  function fetchFiles() {
+    fetch('/api/files?limit=200&offset=0')
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        renderFiles(data.files || [], data.total || 0);
+      })
+      .catch(function() {
+        fileListContent.textContent = '';
+        var errDiv = document.createElement('div');
+        errDiv.className = 'loading';
+        errDiv.textContent = 'Failed to load files';
+        fileListContent.appendChild(errDiv);
+      });
+  }
+
+  function renderFiles(files, total) {
+    selectedFiles = {};
+    updateBatchBar();
+    fileCount.textContent = total + ' file' + (total !== 1 ? 's' : '');
+
+    /* Clear previous content safely */
+    while (fileListContent.firstChild) {
+      fileListContent.removeChild(fileListContent.firstChild);
+    }
+
+    if (files.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+
+      var icon = document.createElement('div');
+      icon.className = 'empty-icon';
+      icon.textContent = '\uD83D\uDCC2';
+      empty.appendChild(icon);
+
+      var p = document.createElement('p');
+      p.textContent = 'No files uploaded yet';
+      empty.appendChild(p);
+
+      fileListContent.appendChild(empty);
+      return;
+    }
+
+    var table = document.createElement('table');
+    table.className = 'file-table';
+
+    /* Header */
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+
+    /* Select-all checkbox column */
+    var thCheck = document.createElement('th');
+    thCheck.className = 'col-check';
+    var selectAllCb = document.createElement('input');
+    selectAllCb.type = 'checkbox';
+    selectAllCb.className = 'file-check';
+    selectAllCb.id = 'selectAll';
+    selectAllCb.addEventListener('change', function() {
+      var checks = document.querySelectorAll('.row-check');
+      for (var k = 0; k < checks.length; k++) {
+        checks[k].checked = selectAllCb.checked;
+        var row = checks[k].closest('tr');
+        var fid = checks[k].getAttribute('data-id');
+        var fname = checks[k].getAttribute('data-name');
+        if (selectAllCb.checked) {
+          selectedFiles[fid] = { id: fid, name: fname };
+          if (row) row.classList.add('selected');
+        } else {
+          delete selectedFiles[fid];
+          if (row) row.classList.remove('selected');
+        }
+      }
+      updateBatchBar();
+    });
+    thCheck.appendChild(selectAllCb);
+    headRow.appendChild(thCheck);
+
+    var cols = [
+      { label: 'Name', cls: '' },
+      { label: 'Size', cls: '' },
+      { label: 'Type', cls: 'col-type' },
+      { label: 'Date', cls: 'col-date' },
+      { label: '', cls: '' }
+    ];
+
+    for (var i = 0; i < cols.length; i++) {
+      var th = document.createElement('th');
+      th.textContent = cols[i].label;
+      if (cols[i].cls) th.className = cols[i].cls;
+      headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    /* Body */
+    var tbody = document.createElement('tbody');
+
+    for (var j = 0; j < files.length; j++) {
+      var file = files[j];
+      var tr = document.createElement('tr');
+
+      /* Checkbox */
+      var tdCheck = document.createElement('td');
+      tdCheck.className = 'col-check';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'file-check row-check';
+      cb.setAttribute('data-id', file.id);
+      cb.setAttribute('data-name', file.originalName);
+      cb.addEventListener('change', (function(checkbox, fileData) {
+        return function() {
+          var row = checkbox.closest('tr');
+          if (checkbox.checked) {
+            selectedFiles[fileData.id] = { id: fileData.id, name: fileData.originalName };
+            if (row) row.classList.add('selected');
+          } else {
+            delete selectedFiles[fileData.id];
+            if (row) row.classList.remove('selected');
+          }
+          updateBatchBar();
+          /* Sync select-all state */
+          var allCb = document.getElementById('selectAll');
+          var total = document.querySelectorAll('.row-check').length;
+          var checked = document.querySelectorAll('.row-check:checked').length;
+          if (allCb) allCb.checked = (total > 0 && total === checked);
+        };
+      })(cb, file));
+      tdCheck.appendChild(cb);
+      tr.appendChild(tdCheck);
+
+      /* Name */
+      var tdName = document.createElement('td');
+      tdName.className = 'file-name';
+      tdName.textContent = file.originalName;
+      tdName.title = file.originalName;
+      tr.appendChild(tdName);
+
+      /* Size */
+      var tdSize = document.createElement('td');
+      tdSize.textContent = formatSize(file.size);
+      tr.appendChild(tdSize);
+
+      /* Type */
+      var tdType = document.createElement('td');
+      tdType.className = 'col-type';
+      tdType.textContent = file.mimeType.split('/').pop().toUpperCase();
+      tr.appendChild(tdType);
+
+      /* Date */
+      var tdDate = document.createElement('td');
+      tdDate.className = 'col-date';
+      tdDate.textContent = formatDate(file.uploadedAt);
+      tr.appendChild(tdDate);
+
+      /* Actions */
+      var tdActions = document.createElement('td');
+      tdActions.className = 'file-actions';
+
+      var dlLink = document.createElement('a');
+      dlLink.className = 'btn btn-download';
+      dlLink.href = '/api/files/' + encodeURIComponent(file.id);
+      dlLink.textContent = 'Download';
+      tdActions.appendChild(dlLink);
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-danger';
+      delBtn.textContent = 'Delete';
+      delBtn.setAttribute('data-id', file.id);
+      delBtn.setAttribute('data-name', file.originalName);
+      delBtn.addEventListener('click', handleDelete);
+      tdActions.appendChild(delBtn);
+
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    fileListContent.appendChild(table);
+  }
+
+  /* ── Delete ── */
+
+  function handleDelete(e) {
+    var btn = e.currentTarget;
+    var id = btn.getAttribute('data-id');
+    var name = btn.getAttribute('data-name');
+
+    if (!confirm('Delete "' + name + '"?')) return;
+
+    fetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function(res) {
+        if (res.ok) {
+          showMessage('Deleted: ' + name, 'success');
+          fetchFiles();
+        } else {
+          return res.json().then(function(data) {
+            showMessage(data.error || 'Delete failed', 'error');
+          });
+        }
+      })
+      .catch(function() {
+        showMessage('Network error — could not delete', 'error');
+      });
+  }
+
+  /* ── Batch Actions ── */
+
+  batchCancel.addEventListener('click', clearSelection);
+
+  batchDelete.addEventListener('click', function() {
+    var ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm('Delete ' + ids.length + ' file' + (ids.length !== 1 ? 's' : '') + '?')) return;
+
+    var done = 0;
+    var failed = 0;
+
+    function deleteNext(idx) {
+      if (idx >= ids.length) {
+        clearSelection();
+        fetchFiles();
+        if (failed === 0) {
+          showMessage('Deleted ' + done + ' file' + (done !== 1 ? 's' : ''), 'success');
+        } else {
+          showMessage('Deleted ' + done + ', failed ' + failed, 'error');
+        }
+        return;
+      }
+      fetch('/api/files/' + encodeURIComponent(ids[idx]), { method: 'DELETE' })
+        .then(function(res) {
+          if (res.ok) {
+            done++;
+            deleteNext(idx + 1);
+          } else if (res.status === 429) {
+            showMessage('Rate limit reached. Deleted ' + done + ' so far — wait a minute and retry the rest.', 'error');
+            clearSelection();
+            fetchFiles();
+          } else {
+            failed++;
+            deleteNext(idx + 1);
+          }
+        })
+        .catch(function() {
+          failed++;
+          deleteNext(idx + 1);
+        });
+    }
+    deleteNext(0);
+  });
+
+  batchDownload.addEventListener('click', function() {
+    var ids = getSelectedIds();
+    if (ids.length === 0) return;
+
+    function downloadNext(idx) {
+      if (idx >= ids.length) {
+        clearSelection();
+        showMessage('Downloaded ' + ids.length + ' file' + (ids.length !== 1 ? 's' : ''), 'success');
+        return;
+      }
+      var file = selectedFiles[ids[idx]];
+      var a = document.createElement('a');
+      a.href = '/api/files/' + encodeURIComponent(ids[idx]);
+      a.download = file ? file.name : '';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function() { downloadNext(idx + 1); }, 300);
+    }
+    downloadNext(0);
+  });
+
+  /* ── Drag & Drop (upload zone) ── */
+
+  uploadZone.addEventListener('click', function(e) {
+    if (e.target === browseBtn || browseBtn.contains(e.target)) return;
+    fileInput.click();
+  });
+
+  browseBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files.length > 0) {
+      uploadFiles(fileInput.files);
+      fileInput.value = '';
+    }
+  });
+
+  uploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone.addEventListener('dragleave', function() {
+    uploadZone.classList.remove('dragover');
+  });
+
+  uploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      uploadFiles(e.dataTransfer.files);
+    }
+  });
+
+  /* ── Full-page drag overlay ── */
+  var dragCounter = 0;
+
+  document.addEventListener('dragenter', function(e) {
+    e.preventDefault();
+    dragCounter++;
+    dragOverlay.classList.add('active');
+  });
+
+  document.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      dragOverlay.classList.remove('active');
+    }
+  });
+
+  document.addEventListener('dragover', function(e) {
+    e.preventDefault();
+  });
+
+  document.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dragCounter = 0;
+    dragOverlay.classList.remove('active');
+    if (e.dataTransfer.files.length > 0) {
+      uploadFiles(e.dataTransfer.files);
+    }
+  });
+
+  /* ── Init ── */
+  fetchFiles();
+
+})();
+</script>
+
+</body>
+</html>

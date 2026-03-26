@@ -1,0 +1,18 @@
+# Deploy to /etc/caddy/Caddyfile
+# Replace your-domain.example.com with your actual domain
+# Generate password hash: caddy hash-password --plaintext 'your-password'
+
+your-domain.example.com {
+    basicauth * {
+        admin $2a$14$REPLACE_WITH_BCRYPT_HASH
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+        -Server
+    }
+    reverse_proxy localhost:3500
+}
