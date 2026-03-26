@@ -1,6 +1,11 @@
 #!/bin/bash
-# Run as root in Recovery Console or with sudo
+# Run as root or with sudo
+# Usage: ./setup-caddy.sh <domain> [password]
+# If password is omitted, a random 32-char password is generated.
 set -e
+
+DOMAIN="${1:?Usage: ./setup-caddy.sh <domain> [password]}"
+PASS="${2:-$(openssl rand -base64 32)}"
 
 echo "=== Caddy Setup ==="
 
@@ -10,12 +15,10 @@ if ! command -v caddy &> /dev/null; then
   apt install -y caddy
 fi
 
-# Generate password
-PASS="c1247AufpVqwY0CuVVKwrZh/iUH3rDngJN3BWOMf2tI="
 HASH=$(caddy hash-password --plaintext "$PASS")
 
 cat > /etc/caddy/Caddyfile << CADDYEOF
-upload.baikodis.ru {
+${DOMAIN} {
     basicauth * {
         admin ${HASH}
     }
@@ -35,6 +38,8 @@ systemctl restart caddy
 
 echo ""
 echo "=== Caddy ready ==="
-echo "URL:   https://upload.baikodis.ru"
+echo "URL:   https://${DOMAIN}"
 echo "Login: admin"
-echo "Pass:  $PASS"
+echo "Pass:  ${PASS}"
+echo ""
+echo "Save this password — it is not stored anywhere in plaintext."
