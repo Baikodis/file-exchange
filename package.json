@@ -5,7 +5,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node --env-file=.env src/server.js",
-    "dev": "node --watch --env-file=.env src/server.js"
+    "dev": "node --watch --env-file=.env src/server.js",
+    "pm2": "npx pm2 delete file-exchange 2>/dev/null; npx pm2 start ecosystem.config.cjs && npx pm2 save",
+    "pm2:stop": "npx pm2 stop file-exchange",
+    "pm2:logs": "npx pm2 logs file-exchange --lines 50 --nostream"
   },
   "dependencies": {
     "express": "^4.21",
