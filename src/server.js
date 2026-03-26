@@ -28,7 +28,7 @@ app.use(httpLogger);
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ── Routes ── */
-app.post('/api/upload', uploadRouter);
+app.use('/api/upload', uploadRouter);
 app.use('/api/files', listRouter);       // GET /api/files
 app.use('/api/files', downloadRouter);   // GET /api/files/:id
 app.use('/api/files', deleteRouter);     // DELETE /api/files/:id
