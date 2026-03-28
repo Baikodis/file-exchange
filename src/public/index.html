@@ -630,6 +630,7 @@ main {
       });
 
       xhr.open('POST', '/api/upload');
+      xhr.withCredentials = true;
       xhr.send(formData);
     });
   }
@@ -682,7 +683,7 @@ main {
   /* ── File List ── */
 
   function fetchFiles() {
-    fetch('/api/files?limit=200&offset=0')
+    fetch('/api/files?limit=200&offset=0', { credentials: 'include' })
       .then(function(res) { return res.json(); })
       .then(function(data) {
         renderFiles(data.files || [], data.total || 0);
@@ -870,7 +871,7 @@ main {
 
     if (!confirm('Delete "' + name + '"?')) return;
 
-    fetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE' })
+    fetch('/api/files/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' })
       .then(function(res) {
         if (res.ok) {
           showMessage('Deleted: ' + name, 'success');
@@ -909,7 +910,7 @@ main {
         }
         return;
       }
-      fetch('/api/files/' + encodeURIComponent(ids[idx]), { method: 'DELETE' })
+      fetch('/api/files/' + encodeURIComponent(ids[idx]), { method: 'DELETE', credentials: 'include' })
         .then(function(res) {
           if (res.ok) {
             done++;
