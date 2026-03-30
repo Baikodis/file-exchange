@@ -30,6 +30,7 @@ const config = {
         'text/csv',
         'application/zip',
         'application/json',
+        'application/vnd.oasis.opendocument.text',
       ],
 };
 
