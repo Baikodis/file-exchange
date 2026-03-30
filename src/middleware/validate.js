@@ -21,6 +21,7 @@ const EXT_MIME_MAP = {
   '.csv': 'text/csv',
   '.zip': 'application/zip',
   '.json': 'application/json',
+  '.odt': 'application/vnd.oasis.opendocument.text',
 };
 
 /** Text MIME types that have no magic bytes signature. */
@@ -34,6 +35,7 @@ const ZIP_BASED_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.oasis.opendocument.text',
 ]);
 
 /**

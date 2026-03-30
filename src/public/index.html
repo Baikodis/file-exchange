@@ -824,9 +824,24 @@ main {
       tr.appendChild(tdSize);
 
       /* Type */
+      var FRIENDLY_TYPES = {
+        'image/jpeg': 'JPEG',
+        'image/png': 'PNG',
+        'image/gif': 'GIF',
+        'image/webp': 'WEBP',
+        'application/pdf': 'PDF',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+        'application/vnd.oasis.opendocument.text': 'ODT',
+        'text/plain': 'TXT',
+        'text/csv': 'CSV',
+        'application/zip': 'ZIP',
+        'application/json': 'JSON'
+      };
       var tdType = document.createElement('td');
       tdType.className = 'col-type';
-      tdType.textContent = file.mimeType.split('/').pop().toUpperCase();
+      tdType.textContent = FRIENDLY_TYPES[file.mimeType] || file.mimeType.split('/').pop().toUpperCase();
       tr.appendChild(tdType);
 
       /* Date */
