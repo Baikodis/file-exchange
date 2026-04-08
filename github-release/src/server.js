@@ -93,7 +93,7 @@ setInterval(cleanupExpiredFiles, ONE_HOUR);
 setTimeout(cleanupExpiredFiles, 5_000);
 
 /* ── Start server ── */
-app.listen(config.port, '127.0.0.1', () => {
+const server = app.listen(config.port, '127.0.0.1', () => {
   log('info', `File Exchange server started on port ${config.port}`, {
     uploadDir: config.uploadDir,
     maxFileSize: config.maxFileSize,
@@ -101,3 +101,7 @@ app.listen(config.port, '127.0.0.1', () => {
     allowedTypes: config.allowedTypes.length,
   });
 });
+
+/* ── Timeouts for large file uploads/downloads (10 min) ── */
+server.requestTimeout = 600_000;
+server.timeout = 600_000;
