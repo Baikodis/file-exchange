@@ -20,6 +20,16 @@ const SIGNATURES = [
   { bytes: [0x47, 0x49, 0x46, 0x38], mime: 'image/gif' },
 ];
 
+// MP3: ID3v2 tag (49 44 33) or MPEG sync word (FF FB, FF F3, FF F2)
+function isMp3(buf) {
+  if (buf.length < 3) return false;
+  // ID3v2 header
+  if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return true;
+  // MPEG audio sync word
+  if (buf[0] === 0xff && (buf[1] === 0xfb || buf[1] === 0xf3 || buf[1] === 0xf2)) return true;
+  return false;
+}
+
 // MP4 has ????ftyp structure — type code at offset 4
 function isMp4(buf) {
   return (
@@ -57,6 +67,9 @@ function detectMimeType(buffer) {
 
   // Check WebP first (RIFF container)
   if (isWebP(buffer)) return 'image/webp';
+
+  // Check MP3 (ID3 tag or sync word)
+  if (isMp3(buffer)) return 'audio/mpeg';
 
   // Check MP4 (ftyp box at offset 4)
   if (isMp4(buffer)) return 'video/mp4';

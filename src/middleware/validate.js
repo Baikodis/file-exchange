@@ -23,6 +23,7 @@ const EXT_MIME_MAP = {
   '.json': 'application/json',
   '.odt': 'application/vnd.oasis.opendocument.text',
   '.mp4': 'video/mp4',
+  '.mp3': 'audio/mpeg',
 };
 
 /** Text MIME types that have no magic bytes signature. */
