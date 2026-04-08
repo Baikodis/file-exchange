@@ -31,6 +31,7 @@ const config = {
         'application/zip',
         'application/json',
         'application/vnd.oasis.opendocument.text',
+        'video/mp4',
       ],
 };
 

@@ -20,6 +20,17 @@ const SIGNATURES = [
   { bytes: [0x47, 0x49, 0x46, 0x38], mime: 'image/gif' },
 ];
 
+// MP4 has ????ftyp structure — type code at offset 4
+function isMp4(buf) {
+  return (
+    buf.length >= 8 &&
+    buf[4] === 0x66 && // f
+    buf[5] === 0x74 && // t
+    buf[6] === 0x79 && // y
+    buf[7] === 0x70    // p
+  );
+}
+
 // WebP has RIFF....WEBP structure — special case
 function isWebP(buf) {
   return (
@@ -46,6 +57,9 @@ function detectMimeType(buffer) {
 
   // Check WebP first (RIFF container)
   if (isWebP(buffer)) return 'image/webp';
+
+  // Check MP4 (ftyp box at offset 4)
+  if (isMp4(buffer)) return 'video/mp4';
 
   // Check standard signatures (ordered longest-first via array order)
   for (const sig of SIGNATURES) {

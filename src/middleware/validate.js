@@ -22,6 +22,7 @@ const EXT_MIME_MAP = {
   '.zip': 'application/zip',
   '.json': 'application/json',
   '.odt': 'application/vnd.oasis.opendocument.text',
+  '.mp4': 'video/mp4',
 };
 
 /** Text MIME types that have no magic bytes signature. */

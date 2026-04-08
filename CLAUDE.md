@@ -22,7 +22,7 @@ https://upload.baikodis.ru
 TTL: 7 дней, авточистка каждый час
 
 ## Allowed Types
-jpeg, png, gif, webp, pdf, xlsx, docx, pptx, odt, txt, csv, zip, json
+jpeg, png, gif, webp, pdf, xlsx, docx, pptx, odt, txt, csv, zip, json, mp4
 
 ## Validation Pipeline
 1. Content-Length → reject if > 500MB
