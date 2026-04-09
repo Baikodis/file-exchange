@@ -26,6 +26,7 @@ const MIME_EXT_MAP = {
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
   'application/vnd.oasis.opendocument.text': 'odt',
   'video/mp4': 'mp4',
+  'audio/mpeg': 'mp3',
 };
 
 /** Multer configured to stream to OS temp directory. */
