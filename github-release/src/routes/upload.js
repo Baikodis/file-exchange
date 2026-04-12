@@ -26,6 +26,7 @@ const MIME_EXT_MAP = {
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
   'application/vnd.oasis.opendocument.text': 'odt',
   'video/mp4': 'mp4',
+  'audio/mpeg': 'mp3',
 };
 
 /** Multer configured to stream to OS temp directory. */
@@ -80,8 +81,9 @@ router.post(
       // d. Compute SHA-256 hash (before rename — file is still in temp)
       const sha256 = await computeSha256(tempPath);
 
-      // e. Atomic rename to upload directory
-      await fsp.rename(tempPath, storedPath);
+      // e. Move to upload directory (copyFile + unlink for cross-device support)
+      await fsp.copyFile(tempPath, storedPath);
+      await fsp.unlink(tempPath);
 
       // f. Set file permissions to 0640 (owner rw, group r, others none)
       await fsp.chmod(storedPath, 0o640);

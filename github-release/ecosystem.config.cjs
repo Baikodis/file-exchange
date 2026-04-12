@@ -7,7 +7,7 @@ module.exports = {
       instances: 1,
       max_memory_restart: '256M',
       watch: ['src'],
-      watch_delay: 1000,
+      watch_delay: 500,
       ignore_watch: ['node_modules', 'uploads', '*.log'],
       env: {
         NODE_ENV: 'production',
