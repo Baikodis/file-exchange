@@ -47,12 +47,17 @@ PORT, UPLOAD_DIR, MAX_FILE_SIZE, RATE_LIMIT_UPLOADS, FILE_TTL_DAYS, CORS_ORIGIN,
 
 ## Dependencies
 express ^4.21, multer ^1.4, uuid ^11, express-rate-limit ^7, morgan ^1
-PM2 в devDependencies. Нет helmet, dotenv, file-type (удалены при аудите).
+Нет helmet, dotenv, file-type (удалены при аудите).
+
+## Process Management
+systemd unit: `file-exchange.service` (`/etc/systemd/system/file-exchange.service`)
+- ExecStart: `node --env-file=.env src/server.js`
+- Restart=always, RestartSec=5
+- Управление: `sudo systemctl restart/stop/status file-exchange`
+- Логи: `journalctl -u file-exchange -f`
 
 ## Нюансы
-- ecosystem.config.cjs (НЕ .js — package.json type=module)
 - Router монтируется через app.use(), НЕ app.post()
-- PM2 watch на src/ — авторестарт при правках кода
 - multer имеет DoS CVE, пакет заброшен — миграция в будущем
 
 ## github-release/

@@ -47,7 +47,7 @@ npm start
 # Open in browser or: curl http://localhost:3500/api/files
 ```
 
-**Run with PM2 (recommended):**
+**Run with PM2:**
 
 ```bash
 npx pm2 start ecosystem.config.cjs
@@ -55,6 +55,35 @@ npx pm2 save
 ```
 
 > Note: `pm2 startup` (systemd auto-start on reboot) requires root — see Phase 2.
+
+**Or with systemd (recommended):**
+
+Create `/etc/systemd/system/file-exchange.service`:
+
+```ini
+[Unit]
+Description=File Exchange
+After=network.target
+
+[Service]
+Type=simple
+User=your-user
+WorkingDirectory=/path/to/file-exchange
+ExecStart=/usr/bin/node --env-file=.env src/server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now file-exchange
+```
 
 After Phase 1, the app is running on `http://localhost:3500`. It works, but has no TLS and no password protection. Proceed to Phase 2 for production use.
 
@@ -103,7 +132,11 @@ sudo ufw allow 443   # HTTPS
 
 Port 3500 should **not** be exposed — Caddy proxies to it on localhost.
 
-**5. PM2 auto-start on reboot**
+**5. Auto-start on reboot**
+
+If using systemd — already handled by `systemctl enable`.
+
+If using PM2:
 
 ```bash
 sudo env PATH=$PATH:/usr/bin npx pm2 startup systemd -u $(whoami) --hp $(eval echo ~$(whoami))
@@ -167,7 +200,16 @@ All endpoints return JSON.
 
 ## Server Administration
 
-### PM2
+### systemd
+
+```bash
+sudo systemctl status file-exchange      # check if running
+sudo systemctl restart file-exchange     # restart after .env changes
+journalctl -u file-exchange -f           # view logs
+journalctl -u file-exchange --since "1h ago"
+```
+
+### PM2 (if using PM2 instead of systemd)
 
 ```bash
 pm2 status                    # check if running
@@ -175,8 +217,6 @@ pm2 restart file-exchange     # restart after .env changes
 pm2 logs file-exchange        # view logs
 pm2 logs file-exchange --lines 100
 ```
-
-PM2 watch is enabled by default — the server auto-restarts when files in `src/` change. Manual restart is only needed for `.env` changes.
 
 ### Caddy
 
