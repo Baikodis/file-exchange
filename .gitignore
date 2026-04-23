@@ -2,5 +2,6 @@ node_modules/
 .env
 uploads/
 .media/
+src/public/longread*/
 *.log
 .logs/
