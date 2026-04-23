@@ -24,6 +24,7 @@ const EXT_MIME_MAP = {
   '.odt': 'application/vnd.oasis.opendocument.text',
   '.mp4': 'video/mp4',
   '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
 };
 
 /** Text MIME types that have no magic bytes signature. */

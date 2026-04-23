@@ -27,6 +27,7 @@ const MIME_EXT_MAP = {
   'application/vnd.oasis.opendocument.text': 'odt',
   'video/mp4': 'mp4',
   'audio/mpeg': 'mp3',
+  'audio/ogg': 'ogg',
 };
 
 /** Multer configured to stream to OS temp directory. */

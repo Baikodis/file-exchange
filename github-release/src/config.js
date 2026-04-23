@@ -33,6 +33,7 @@ const config = {
         'application/vnd.oasis.opendocument.text',
         'video/mp4',
         'audio/mpeg',
+        'audio/ogg',
       ],
 };
 

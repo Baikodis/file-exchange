@@ -71,6 +71,11 @@ function detectMimeType(buffer) {
   // Check MP3 (ID3 tag or sync word)
   if (isMp3(buffer)) return 'audio/mpeg';
 
+  // Check OGG (OggS magic bytes)
+  if (buffer.length >= 4 &&
+      buffer[0] === 0x4f && buffer[1] === 0x67 &&
+      buffer[2] === 0x67 && buffer[3] === 0x53) return 'audio/ogg';
+
   // Check MP4 (ftyp box at offset 4)
   if (isMp4(buffer)) return 'video/mp4';
 
