@@ -22,7 +22,7 @@ https://upload.baikodis.ru
 TTL: 7 дней, авточистка каждый час
 
 ## Allowed Types
-jpeg, png, gif, webp, pdf, xlsx, docx, pptx, odt, txt, csv, zip, json, mp4, mp3, ogg
+jpeg, png, gif, webp, pdf, xlsx, docx, pptx, odt, txt, csv, zip, json, mp4, mp3, ogg, m4a
 
 ## Validation Pipeline
 1. Content-Length → reject if > 500MB
@@ -32,6 +32,29 @@ jpeg, png, gif, webp, pdf, xlsx, docx, pptx, odt, txt, csv, zip, json, mp4, mp3,
 5. SHA256 hash
 6. UUID rename (atomic, prevents TOCTOU)
 7. Write .meta.json
+
+## Добавление нового формата — чеклист
+
+Все 4 точки обязательны, иначе будет ошибка на одном из шагов валидации.
+
+1. `src/middleware/validate.js` → `EXT_MIME_MAP`: добавить `.ext: 'mime/type'`
+2. `src/routes/upload.js` → `MIME_EXT_MAP`: добавить `'mime/type': 'ext'` (reverse lookup для сохранения)
+3. `.env` → `ALLOWED_TYPES`: дописать `mime/type` в конец списка
+4. `.env.example` → `ALLOWED_TYPES`: то же
+
+Особые случаи (magic bytes отличаются от реального MIME):
+- ZIP-контейнеры (xlsx, docx, pptx, odt): magic = `application/zip` → override по расширению через `ZIP_BASED_TYPES`
+- FTYP-контейнеры (m4a): magic = `video/mp4` → override по расширению через `FTYP_BASED_TYPES`
+- Текстовые (txt, csv, json): magic = null → resolve через `TEXT_TYPES`
+Если новый формат попадает в эти категории — добавить его в соответствующий Set.
+
+Если формат имеет уникальные magic bytes — добавить сигнатуру в `src/utils/magic.js`.
+
+После правок — перезапуск:
+```
+kill $(ss -tlnp | grep 3500 | grep -oP 'pid=\K\d+')
+```
+systemd (Restart=always) перезапустит автоматически через ~5 сек.
 
 ## Security
 - TLS: Let's Encrypt via Caddy, HSTS
@@ -50,7 +73,15 @@ express ^4.21, multer ^1.4, uuid ^11, express-rate-limit ^7, morgan ^1
 Нет helmet, dotenv, file-type (удалены при аудите).
 
 ## Process Management
-systemd unit: `file-exchange.service` (`/etc/systemd/system/file-exchange.service`)
+PM2 (основной способ перезапуска из sandbox):
+- Перезапуск: `PM2_HOME=/tmp/pm2-home pm2 restart file-exchange`
+- Если PM2 daemon не запущен: `PM2_HOME=/tmp/pm2-home pm2 start ecosystem.config.cjs`
+- Статус: `PM2_HOME=/tmp/pm2-home pm2 status`
+- Логи: `PM2_HOME=/tmp/pm2-home pm2 logs file-exchange --lines 50 --nostream`
+- ВАЖНО: npx pm2 не работает (EROFS на .npm), использовать глобальный `pm2` с `PM2_HOME=/tmp/pm2-home`
+
+systemd (альтернатива, требует sudo):
+- Unit: `file-exchange.service` (`/etc/systemd/system/file-exchange.service`)
 - ExecStart: `node --env-file=.env src/server.js`
 - Restart=always, RestartSec=5
 - Управление: `sudo systemctl restart/stop/status file-exchange`

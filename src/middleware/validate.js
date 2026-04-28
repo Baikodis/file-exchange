@@ -25,6 +25,7 @@ const EXT_MIME_MAP = {
   '.mp4': 'video/mp4',
   '.mp3': 'audio/mpeg',
   '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4',
 };
 
 /** Text MIME types that have no magic bytes signature. */
@@ -39,6 +40,14 @@ const ZIP_BASED_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.oasis.opendocument.text',
+]);
+
+/**
+ * FTYP-based types — magic bytes detect as video/mp4 (ftyp box),
+ * but the real type is determined by extension (e.g. .m4a → audio/mp4).
+ */
+const FTYP_BASED_TYPES = new Set([
+  'audio/mp4',
 ]);
 
 /**
@@ -110,8 +119,13 @@ async function validateFile(req, res, next) {
       }
     }
 
-    // Step 4: ZIP-based OOXML — magic detects as zip, real type from extension
+    // Step 4a: ZIP-based OOXML — magic detects as zip, real type from extension
     if (detectedMime === 'application/zip' && ZIP_BASED_TYPES.has(extMime)) {
+      detectedMime = extMime;
+    }
+
+    // Step 4b: FTYP-based — magic detects as video/mp4, real type from extension
+    if (detectedMime === 'video/mp4' && FTYP_BASED_TYPES.has(extMime)) {
       detectedMime = extMime;
     }
 

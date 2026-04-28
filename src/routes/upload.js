@@ -28,6 +28,7 @@ const MIME_EXT_MAP = {
   'video/mp4': 'mp4',
   'audio/mpeg': 'mp3',
   'audio/ogg': 'ogg',
+  'audio/mp4': 'm4a',
 };
 
 /** Multer configured to stream to OS temp directory. */
